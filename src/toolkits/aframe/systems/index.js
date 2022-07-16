@@ -10,3 +10,4 @@ export { default as TagsInterproximalContacts } from './TagsInterproximalContact
 export { default as Teeth } from './Teeth'
 export { default as TextSprite } from './TextSprite'
 export { default as Timer } from './Timer'
+export { default as Cutting } from './Cutting'

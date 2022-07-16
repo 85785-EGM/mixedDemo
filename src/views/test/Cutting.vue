@@ -5,6 +5,7 @@
     renderer="sortObjects:false"
     device-orientation-permission-ui="enabled: false"
     vr-mode-ui="enabled: false"
+    cutting
   >
     <a-sphere
       id="ball0"
