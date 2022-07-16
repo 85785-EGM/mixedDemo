@@ -1,2 +1,2 @@
+export { default as Cutting } from '@/views/test/Cutting.vue'
 export { default as MeshCut } from '@/views/test/MeshCut.vue'
-export { default as ShapeCut } from '@/views/test/ShapeCut.vue'
