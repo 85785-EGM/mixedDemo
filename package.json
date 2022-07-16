@@ -1,0 +1,34 @@
+// npm config set ELECTRON_MIRROR http://npm.taobao.org/mirrors/electron/
+{
+  "name": "aframe-fast-test",
+  "version": "0.0.0",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "window": "electron .",
+    "window:build": "vite build&&electron ."
+  },  
+  "dependencies": {
+    "aframe": "npm:aframe-wz@^1.2.0-beta.8",
+    "libtess": "^1.2.2",
+    "super-three": "^0.137.0",
+    "three-mesh-bvh": "^0.5.8",
+    "vue": "^3.0.4",
+    "vue-router": "^4.0.14"
+  },
+  "devDependencies": {
+    "@types/aframe": "^1.2.0",
+    "@vitejs/plugin-vue": "^2.3.1",
+    "@vitest/ui": "^0.9.3",
+    "@vue/compiler-sfc": "^3.2.31",
+    "c8": "^7.11.0",
+    "electron": "^19.0.8",
+    "esbuild": "^0.14.36",
+    "eslint-plugin-vue": "^8.6.0",
+    "jsdom": "^19.0.0",
+    "standard": "^16.0.4",
+    "vite": "^2.9.1",
+    "vitest": "^0.9.3"
+  }
+}

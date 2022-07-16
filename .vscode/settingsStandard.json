@@ -1,0 +1,9 @@
+{
+    "standard.enable": true,
+    "standard.autoFixOnSave": true,
+    "[javascript]": {
+        "editor.defaultFormatter": "numso.prettier-standard-vscode"
+    },
+    "javascript.validate.enable": false,
+    "editor.formatOnSave": true
+}
