@@ -17,10 +17,11 @@
       id="camera"
       camera="fov:20;near:1;far:300"
       camera-controls="offset:100 100 100;"
-      clicker="targets:[clickable]"
+      clicker
     />
-    <a-entity auto-light="intensity: 1;" /> </a-scene
-></template>
+    <a-entity auto-light="intensity: 1;" />
+  </a-scene>
+</template>
 
 <script setup></script>
 
