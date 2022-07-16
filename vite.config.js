@@ -2,6 +2,7 @@ import vue from '@vitejs/plugin-vue'
 import fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
+import './helper'
 
 // https://vitejs.dev/config/
 export default defineConfig({
