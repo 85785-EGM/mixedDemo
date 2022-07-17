@@ -1,7 +1,7 @@
 {
   "name": "aframe-fast-test",
   "version": "0.0.0",
-  "main": "electron/main.js",
+  "main": "main/main.js",
   "scripts": {
     "start": "vite",
     "build": "vite build",
