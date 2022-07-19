@@ -5,15 +5,19 @@
     vr-mode-ui="enabled: false"
     axes-helper="visible: true"
   >
-    <a-sphere
+    <a-plane
       id="asdf"
       radius="10"
       position="0 0 0"
-      material="color: #8cdcfe;flatShading:true;opacity:0.2"
+      height="40"
+      width="40"
+      segments-height="4"
+      segments-width="4"
+      material="color: #8cdcfe;flatShading:true;opacity:0.2;wireframe:true"
     />
     <a-entity
       id="qwer"
-      material="color: #12852c;flatShading:true;opacity:0.8"
+      material="color: #12852c;flatShading:true;opacity:0.8;wireframe:false"
     />
     <a-cam
       id="camera"

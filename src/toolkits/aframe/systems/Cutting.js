@@ -1,3 +1,4 @@
+import { PlaneHelper } from 'super-three'
 import {
   BufferAttribute,
   BufferGeometry,
@@ -16,6 +17,15 @@ const _r = new Raycaster()
 const _v = new Vector3()
 const tempLine = new Line3()
 const tempVector = new Vector3()
+const XY = new Vector3(0, 0, 1).normalize()
+
+function toKey (v = new Vector3()) {
+  const array = []
+  for (const x of v.toArray()) {
+    array.push(Math.fround(x))
+  }
+  return array.join(',')
+}
 
 function buildPlaneFacetsWithTess (shapePoints = []) {
   const data = shapePoints.map(p => [p.x, p.y]).flat()
@@ -42,7 +52,8 @@ function planeIntersectTriangle ({ a, b, c }, plane) {
       count++
     }
   }
-  if (count === 0 || count === 3) return { positions }
+  if (count === 0) return []
+  if (count === 3) return [[a, b, c]]
   let firstFoundIsAB = false
 
   const s = new Vector3() // line start
@@ -100,28 +111,159 @@ function planeIntersectTriangle ({ a, b, c }, plane) {
   return positions
 }
 
+function getIntersectLine ({ a, b, c }, plane) {
+  const s = new Vector3()
+  const e = new Vector3()
+  let isSecond = false
+  if (plane.intersectLine(tempLine.set(a, b), tempVector)) {
+    s.copy(tempVector)
+    isSecond = true
+  }
+  if (plane.intersectLine(tempLine.set(b, c), tempVector)) {
+    if (isSecond) e.copy(tempVector)
+    else s.copy(tempVector)
+    isSecond = true
+  }
+  if (plane.intersectLine(tempLine.set(c, a), tempVector)) {
+    e.copy(tempVector)
+  }
+  return new Line3(s, e)
+}
+
+function coplanarPoints (points = [new Vector3()], plane = new Plane()) {
+  const axis = plane
+    .clone()
+    .normal.cross(XY)
+    .normalize()
+  const angle = plane.normal.angleTo(XY)
+  const rotation = new Matrix4()
+  const array = []
+  const translation = new Matrix4()
+
+  rotation.makeRotationAxis(axis, angle)
+  for (const p of points) {
+    const v = p.clone().applyMatrix4(rotation)
+    translation.makeTranslation(0, 0, -v.z)
+    array.push(v.setZ(0))
+  }
+  return {
+    points: array,
+    matrix: translation
+      .clone()
+      .multiply(rotation)
+      .invert()
+  }
+}
+
+function lineIntersectLine (
+  a = new Line3(),
+  b = new Line3(),
+  targetVector = new Vector3()
+) {
+  // 之前已经判断出线段共面
+  const plane = new Plane().setFromCoplanarPoints(a.start, a.end, b.start)
+
+  const { points, matrix } = coplanarPoints(
+    [a.start, a.end, b.start, b.end],
+    plane
+  )
+  const ax1 = points[0].x
+  const ay1 = points[0].y
+
+  const ax2 = points[1].x
+  const ay2 = points[1].y
+
+  const bx1 = points[2].x
+  const by1 = points[2].y
+
+  const bx2 = points[3].x
+  const by2 = points[3].y
+
+  const k1 = (ay2 - ay1) / (ax2 - ax1)
+  const k2 = (by2 - by1) / (bx2 - bx1)
+  const b1 = ay1 - k1 * ax1
+  const b2 = by1 - k2 * bx1
+  const x = (b2 - b1) / (k1 - k2)
+  const y = k1 * x + b1
+
+  targetVector.set(x, y, 0).applyMatrix4(matrix)
+
+  return (
+    (x - ax1) * (x - ax2) <= 0 &&
+    (y - ay1) * (y - ay2) <= 0 &&
+    (x - bx1) * (x - bx2) <= 0 &&
+    (y - by1) * (y - by2) <= 0
+  )
+}
+
 // 根据平面切割三角面片（判断）
-function filterTriangleWithPlane (
+function filterTriangleWithPlanes (
   a = new Vector3(),
   b = new Vector3(),
   c = new Vector3(),
-  plane = new Plane()
+  planes = [new Plane()]
 ) {
-  if (
-    plane.distanceToPoint(a) >= 0 &&
-    plane.distanceToPoint(b) >= 0 &&
-    plane.distanceToPoint(c) >= 0
-  ) {
+  const isInclude = plane => {
+    if (
+      plane.distanceToPoint(a) >= 0 &&
+      plane.distanceToPoint(b) >= 0 &&
+      plane.distanceToPoint(c) >= 0
+    )
+      return 1
+    if (
+      plane.distanceToPoint(a) <= 0 &&
+      plane.distanceToPoint(b) <= 0 &&
+      plane.distanceToPoint(c) <= 0
+    )
+      return 0
+    return 2
+  }
+  if (planes.some(plane => isInclude(plane) === 1)) {
     return [a, b, c]
   }
-  if (
-    plane.distanceToPoint(a) <= 0 &&
-    plane.distanceToPoint(b) <= 0 &&
-    plane.distanceToPoint(c) <= 0
-  ) {
+  if (planes.every(plane => isInclude(plane) === 0)) {
     return []
   }
-  return planeIntersectTriangle({ a, b, c }, plane).flat()
+
+  const intersectPlane = planes.filter(p => isInclude(p) === 2)
+  const intersectLines = intersectPlane.map(p =>
+    getIntersectLine({ a, b, c }, p)
+  )
+  if (intersectPlane.length === 1) {
+    if (
+      planes
+        .filter(p => p !== intersectPlane[0])
+        .some(
+          p =>
+            p.distanceToPoint(intersectLines[0].start) >= 0 &&
+            p.distanceToPoint(intersectLines[0].end) >= 0
+        )
+    ) {
+      return [a, b, c]
+    } else {
+      return planeIntersectTriangle({ a, b, c }, intersectPlane[0]).flat()
+    }
+  }
+  if (intersectPlane.length === 2) {
+    if (
+      planes
+        .filter(p => p !== intersectPlane[0])
+        .some(
+          p =>
+            p.distanceToPoint(intersectLines[0].start) >= 0 &&
+            p.distanceToPoint(intersectLines[0].end) >= 0
+        ) &&
+      planes
+        .filter(p => p !== intersectPlane[1])
+        .some(
+          p =>
+            p.distanceToPoint(intersectLines[1].start) >= 0 &&
+            p.distanceToPoint(intersectLines[1].end) >= 0
+        )
+    )
+      return [a, b, c]
+  }
+  return []
 }
 
 export default {
@@ -158,7 +300,11 @@ export default {
 
     const attr = object3D.geometry.toNonIndexed().getAttribute('position')
     attr.applyMatrix4(object3D.matrixWorld)
-    const result = this.minimumCutting(attr, splitTriangle[0])
+    let result = attr
+    for (const st of [splitTriangle[0]]) {
+      result = this.minimumCutting(result, st)
+    }
+
     result.applyMatrix4(object3D.matrixWorld.invert())
     geometry.setAttribute('position', result)
     return result
@@ -201,9 +347,7 @@ export default {
     const result = []
 
     for (const t of position) {
-      result.push(...filterTriangleWithPlane(...t, planeA))
-      result.push(...filterTriangleWithPlane(...t, planeB))
-      result.push(...filterTriangleWithPlane(...t, planeC))
+      result.push(...filterTriangleWithPlanes(...t, [planeA, planeB, planeC]))
     }
 
     return new BufferAttribute(
