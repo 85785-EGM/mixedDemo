@@ -7,22 +7,22 @@ function createWindow () {
   })
 
   win.loadFile('dist/index.html')
-  win.hide()
-  const iconTray = new Tray('dist/favicon.jfif')
-  iconTray.setContextMenu(
-    Menu.buildFromTemplate([
-      {
-        label: '设置',
-        click: function () {
-          console.log('setting')
-        }
-      }
-    ])
-  )
+  // win.hide()
+  // const iconTray = new Tray('dist/favicon.jfif')
+  // iconTray.setContextMenu(
+  //   Menu.buildFromTemplate([
+  //     {
+  //       label: '设置',
+  //       click: function () {
+  //         console.log('setting')
+  //       }
+  //     }
+  //   ])
+  // )
 
-  iconTray.on('double-click', function () {
-    win.show()
-  })
+  // iconTray.on('double-click', function () {
+  //   win.show()
+  // })
 }
 
 app.whenReady().then(() => {

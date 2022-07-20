@@ -47,7 +47,7 @@ function planeIntersectTriangle ({ a, b, c }, plane) {
   let count = 0
   const positions = []
   for (const point of [a, b, c]) {
-    if (plane.distanceToPoint(point) > 0) {
+    if (plane.distanceToPoint(point) >= 0) {
       point.isContained = true
       count++
     }
@@ -155,47 +155,6 @@ function coplanarPoints (points = [new Vector3()], plane = new Plane()) {
   }
 }
 
-function lineIntersectLine (
-  a = new Line3(),
-  b = new Line3(),
-  targetVector = new Vector3()
-) {
-  // 之前已经判断出线段共面
-  const plane = new Plane().setFromCoplanarPoints(a.start, a.end, b.start)
-
-  const { points, matrix } = coplanarPoints(
-    [a.start, a.end, b.start, b.end],
-    plane
-  )
-  const ax1 = points[0].x
-  const ay1 = points[0].y
-
-  const ax2 = points[1].x
-  const ay2 = points[1].y
-
-  const bx1 = points[2].x
-  const by1 = points[2].y
-
-  const bx2 = points[3].x
-  const by2 = points[3].y
-
-  const k1 = (ay2 - ay1) / (ax2 - ax1)
-  const k2 = (by2 - by1) / (bx2 - bx1)
-  const b1 = ay1 - k1 * ax1
-  const b2 = by1 - k2 * bx1
-  const x = (b2 - b1) / (k1 - k2)
-  const y = k1 * x + b1
-
-  targetVector.set(x, y, 0).applyMatrix4(matrix)
-
-  return (
-    (x - ax1) * (x - ax2) <= 0 &&
-    (y - ay1) * (y - ay2) <= 0 &&
-    (x - bx1) * (x - bx2) <= 0 &&
-    (y - by1) * (y - by2) <= 0
-  )
-}
-
 // 根据平面切割三角面片（判断）
 function filterTriangleWithPlanes (
   a = new Vector3(),
@@ -255,11 +214,22 @@ function filterTriangleWithPlanes (
     return line.distance() !== 0
   })
   // 如果只有一条相交线，可以制作简单处理
+  if (rightLines.length === 0) return [a, b, c]
   if (rightLines.length === 1) {
     return planeIntersectTriangle({ a, b, c }, rightLines.shift().plane).flat()
   }
-
-  if (rightLines.length === 0) return [a, b, c]
+  let triangles = []
+  let count = 0
+  const intersectPlanes = intersectLines.map(({ plane }) => plane)
+  if (rightLines.length >= 2) {
+    for (const { line, plane } of intersectLines) {
+      triangles = triangles.flatMap(([a, b, c]) => {
+        return planeIntersectTriangle({ a, b, c }, plane.clone().negate())
+      })
+      triangles.push(...planeIntersectTriangle({ a, b, c }, plane))
+    }
+    return triangles.flat()
+  }
   return []
 }
 
@@ -298,7 +268,7 @@ export default {
     const attr = object3D.geometry.toNonIndexed().getAttribute('position')
     attr.applyMatrix4(object3D.matrixWorld)
     let result = attr
-    for (const st of [splitTriangle[0]]) {
+    for (const st of splitTriangle) {
       result = this.minimumCutting(result, st)
     }
 

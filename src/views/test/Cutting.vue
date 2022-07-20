@@ -5,14 +5,12 @@
     vr-mode-ui="enabled: false"
     axes-helper="visible: true"
   >
-    <a-plane
+    <a-sphere
       id="asdf"
       radius="10"
       position="0 0 0"
       height="40"
       width="40"
-      segments-height="4"
-      segments-width="4"
       material="color: #8cdcfe;flatShading:true;opacity:0.2;wireframe:true"
     />
     <a-entity
