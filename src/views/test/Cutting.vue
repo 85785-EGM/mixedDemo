@@ -6,9 +6,16 @@
     axes-helper="visible: true"
   >
     <a-sphere
+      id="asdf"
       radius="10"
       position="0 0 0"
-      material="color: #8cdcfe;flatShading:true"
+      height="40"
+      width="40"
+      material="color: #8cdcfe;flatShading:true;opacity:0.2;wireframe:true"
+    />
+    <a-entity
+      id="qwer"
+      material="color: #12852c;flatShading:true;opacity:0.8;wireframe:false"
     />
     <a-cam
       id="camera"
@@ -41,6 +48,16 @@ function drawLine () {
   if (state.drawing === false) {
     if (state.drawPoints.length < 3) {
       window.alert('最少要有两条线')
+    } else {
+      const option = document
+        .querySelector('a-scene')
+        .systems.cutting.getPlaneAndLinesFromEvent(state.drawPoints)
+
+      const attr = document.querySelector('a-scene').systems.cutting.cutting({
+        object3D: document.querySelector('#asdf').getObject3D('mesh'),
+        output: document.querySelector('#qwer'),
+        ...option
+      })
     }
     state.drawPoints.length = 0
   }
@@ -107,6 +124,6 @@ setInterval(() => {
   z-index: 2;
   left: 20px;
   bottom: 20px;
-  padding: 12px 24px;
+  padding: 30px 40px;
 }
 </style>

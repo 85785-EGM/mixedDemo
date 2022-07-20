@@ -1,5 +1,4 @@
 import Router from '@/views/Router.vue'
-import MeshCut from '@/views/test/MeshCut.vue'
 import * as testHelper from './testHelper'
 
 export default [
