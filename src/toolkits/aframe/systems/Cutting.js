@@ -225,44 +225,41 @@ function filterTriangleWithPlanes (
     return []
   }
 
-  const intersectPlane = planes.filter(p => isInclude(p) === 2)
-  const intersectLines = intersectPlane.map(p =>
-    getIntersectLine({ a, b, c }, p)
-  )
-  if (intersectPlane.length === 1) {
-    if (
-      planes
-        .filter(p => p !== intersectPlane[0])
-        .some(
-          p =>
-            p.distanceToPoint(intersectLines[0].start) >= 0 &&
-            p.distanceToPoint(intersectLines[0].end) >= 0
-        )
-    ) {
-      return [a, b, c]
-    } else {
-      return planeIntersectTriangle({ a, b, c }, intersectPlane[0]).flat()
-    }
+  const intersectLines = planes
+    .filter(p => isInclude(p) === 2)
+    .map(p => ({
+      line: getIntersectLine({ a, b, c }, p),
+      plane: p
+    }))
+
+  // 裁剪相交线
+  let sd
+  let se
+  let ap = []
+  for (const { line, plane } of intersectLines) {
+    ap = planes.filter(p => p !== plane)
+    ap.forEach(p => {
+      sd = p.distanceToPoint(line.start)
+      se = p.distanceToPoint(line.end)
+      if (sd <= 0 && se <= 0) return
+      if (sd < 0 && se > 0) p.intersectLine(line, line.end)
+      if (sd > 0 && se < 0) p.intersectLine(line, line.start)
+      if (sd > 0 && se > 0) {
+        line.end.set(0, 0, 0)
+        line.start.set(0, 0, 0)
+      }
+    })
   }
-  if (intersectPlane.length === 2) {
-    if (
-      planes
-        .filter(p => p !== intersectPlane[0])
-        .some(
-          p =>
-            p.distanceToPoint(intersectLines[0].start) >= 0 &&
-            p.distanceToPoint(intersectLines[0].end) >= 0
-        ) &&
-      planes
-        .filter(p => p !== intersectPlane[1])
-        .some(
-          p =>
-            p.distanceToPoint(intersectLines[1].start) >= 0 &&
-            p.distanceToPoint(intersectLines[1].end) >= 0
-        )
-    )
-      return [a, b, c]
+  // 筛选出实际的相交线
+  const rightLines = intersectLines.filter(({ line }) => {
+    return line.distance() !== 0
+  })
+  // 如果只有一条相交线，可以制作简单处理
+  if (rightLines.length === 1) {
+    return planeIntersectTriangle({ a, b, c }, rightLines.shift().plane).flat()
   }
+
+  if (rightLines.length === 0) return [a, b, c]
   return []
 }
 
