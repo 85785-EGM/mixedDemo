@@ -14,7 +14,7 @@ import {
   Vector3
 } from 'three'
 import { INTERSECTED, NOT_INTERSECTED } from 'three-mesh-bvh'
-import { triangulate } from '../components/libtess'
+import { triangulate } from '../../../utils/three/libtess'
 
 const _r = new Raycaster()
 const _v = new Vector3()
@@ -426,7 +426,6 @@ export default {
         resultArray.push(this.minimumCutting(attr, st, reverse))
       }
       resultArray.forEach(a => a.applyMatrix4(object3D.matrixWorld.invert()))
-
       result = new BufferAttribute(
         new Float32Array(resultArray.flatMap(({ array }) => Array.from(array))),
         3

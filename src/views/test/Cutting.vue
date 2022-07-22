@@ -12,7 +12,7 @@
       height="40"
       width="40"
       material="color: #8cdcfe;flatShading:true;opacity:0.2;wireframe:true"
-      visible="false"
+      visible="true"
     />
     <a-entity
       id="qwer"
