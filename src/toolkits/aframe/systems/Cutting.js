@@ -1,18 +1,20 @@
-import { PlaneHelper } from 'super-three'
 import {
   BufferAttribute,
   BufferGeometry,
+  Line,
   Line3,
+  LineBasicMaterial,
   Matrix4,
   Mesh,
   Plane,
+  PlaneHelper,
   Raycaster,
   Triangle,
   Vector2,
   Vector3
 } from 'three'
-import { triangulate } from '../components/libtess'
 import { INTERSECTED, NOT_INTERSECTED } from 'three-mesh-bvh'
+import { triangulate } from '../components/libtess'
 
 const _r = new Raycaster()
 const _v = new Vector3()
@@ -258,7 +260,8 @@ function filterTriangleWithPlanes (
   a = new Vector3(),
   b = new Vector3(),
   c = new Vector3(),
-  planes = [new Plane()]
+  planes = [new Plane()],
+  reverse = false
 ) {
   const isInclude = plane => {
     if (
@@ -275,11 +278,20 @@ function filterTriangleWithPlanes (
       return 0
     return 2
   }
-  if (planes.some(plane => isInclude(plane) === 1)) {
-    return [a, b, c]
-  }
-  if (planes.every(plane => isInclude(plane) === 0)) {
-    return []
+  if (reverse) {
+    if (planes.every(plane => isInclude(plane) === 0)) {
+      return [a, b, c]
+    }
+    if (planes.some(plane => isInclude(plane) === 1)) {
+      return []
+    }
+  } else {
+    if (planes.some(plane => isInclude(plane) === 1)) {
+      return [a, b, c]
+    }
+    if (planes.every(plane => isInclude(plane) === 0)) {
+      return []
+    }
   }
 
   const intersectLines = planes
@@ -288,7 +300,6 @@ function filterTriangleWithPlanes (
       line: getIntersectLine({ a, b, c }, p),
       plane: p
     }))
-
   // 裁剪相交线
   let sd
   let se
@@ -299,32 +310,43 @@ function filterTriangleWithPlanes (
       sd = p.distanceToPoint(line.start)
       se = p.distanceToPoint(line.end)
       if (sd <= 0 && se <= 0) return
-      if (sd < 0 && se > 0) p.intersectLine(line, line.end)
-      if (sd > 0 && se < 0) p.intersectLine(line, line.start)
       if (sd > 0 && se > 0) {
         line.end.set(0, 0, 0)
         line.start.set(0, 0, 0)
       }
     })
   }
+
   // 筛选出实际的相交线
   const rightLines = intersectLines.filter(({ line }) => {
     return line.distance() !== 0
   })
+
+  // 如果需要反向，将平面反过来
+  if (reverse) rightLines.forEach(({ line, plane }) => plane.negate())
+
   // 如果只有一条相交线，可以制作简单处理
-  if (rightLines.length === 0) return [a, b, c]
+  if (rightLines.length === 0) return reverse ? [] : [a, b, c]
   if (rightLines.length === 1) {
     return planeIntersectTriangle({ a, b, c }, rightLines.shift().plane).flat()
   }
   let triangles = []
-  let count = 0
-  const intersectPlanes = intersectLines.map(({ plane }) => plane)
   if (rightLines.length >= 2) {
-    for (const { line, plane } of intersectLines) {
-      triangles = triangles.flatMap(([a, b, c]) => {
-        return planeIntersectTriangle({ a, b, c }, plane.clone().negate())
-      })
-      triangles.push(...planeIntersectTriangle({ a, b, c }, plane))
+    for (const { line, plane } of rightLines) {
+      if (reverse) {
+        if (triangles.length) {
+          triangles = triangles.flatMap(([a, b, c]) => {
+            return planeIntersectTriangle({ a, b, c }, plane)
+          })
+          continue
+        }
+        triangles.push(...planeIntersectTriangle({ a, b, c }, plane))
+      } else {
+        triangles = triangles.flatMap(([a, b, c]) => {
+          return planeIntersectTriangle({ a, b, c }, plane.clone().negate())
+        })
+        triangles.push(...planeIntersectTriangle({ a, b, c }, plane))
+      }
     }
     return triangles.flat()
   }
@@ -332,7 +354,13 @@ function filterTriangleWithPlanes (
 }
 
 export default {
-  cutting ({ object3D, output, plane = new Plane(), lines = [] }) {
+  cutting ({
+    object3D,
+    output,
+    plane = new Plane(),
+    lines = [],
+    reverse = false
+  }) {
     const geometry = new BufferGeometry()
     output.setObject3D(
       'mesh',
@@ -391,17 +419,33 @@ export default {
     // 切割三角面片
     const attr = object3D.geometry.toNonIndexed().getAttribute('position')
     attr.applyMatrix4(object3D.matrixWorld)
-    let result = attr
-    for (const st of splitTrianglePlanes) {
-      result = this.minimumCutting(result, st)
+    let result
+    if (reverse) {
+      let resultArray = []
+      for (const st of splitTrianglePlanes) {
+        resultArray.push(this.minimumCutting(attr, st, reverse))
+      }
+      resultArray.forEach(a => a.applyMatrix4(object3D.matrixWorld.invert()))
+
+      result = new BufferAttribute(
+        new Float32Array(resultArray.flatMap(({ array }) => Array.from(array))),
+        3
+      )
+    } else {
+      result = attr
+      for (const st of splitTrianglePlanes) {
+        result = this.minimumCutting(result, st, reverse)
+      }
+      result.applyMatrix4(object3D.matrixWorld.invert())
     }
-    result.applyMatrix4(object3D.matrixWorld.invert())
 
     // 修补三角面片
     if (!object3D.geometry.boundsTree) object3D.geometry.computeBoundsTree()
     const repairTriangles = []
     for (const st of splitTrianglePlanes) {
-      repairTriangles.push(...this.fillShape(object3D.geometry.boundsTree, st))
+      repairTriangles.push(
+        ...this.fillShape(object3D.geometry.boundsTree, st, reverse)
+      )
     }
 
     geometry.setAttribute(
@@ -417,7 +461,11 @@ export default {
     return result
   },
 
-  minimumCutting (attr = new BufferAttribute(), [planeA, planeB, planeC]) {
+  minimumCutting (
+    attr = new BufferAttribute(),
+    [planeA, planeB, planeC],
+    reverse
+  ) {
     // 第一步是删除
     const position = []
     for (let i = 0, count = attr.count; i < count; i += 3) {
@@ -431,7 +479,13 @@ export default {
     const result = []
 
     for (const t of position) {
-      result.push(...filterTriangleWithPlanes(...t, [planeA, planeB, planeC]))
+      result.push(
+        ...filterTriangleWithPlanes(
+          ...t,
+          [planeA.clone(), planeB.clone(), planeC.clone()],
+          reverse
+        )
+      )
     }
 
     return new BufferAttribute(
@@ -440,7 +494,7 @@ export default {
     )
   },
 
-  fillShape (bvh, planes) {
+  fillShape (bvh, planes, reverse = true) {
     const triangles = planes
       .flatMap(plane => {
         const lines = this.doCast(bvh, plane)
@@ -460,7 +514,7 @@ export default {
         // 判断是否反向
         if (triangles.length > 3) {
           const triPlane = triangles[0].getPlane(new Plane())
-          if (triPlane.constant * plane.constant > 0) {
+          if (triPlane.constant * plane.constant * (reverse ? -1 : 1) > 0) {
             triangles.forEach(({ a, b, c }) => {
               tempVector.copy(a)
               a.copy(c)
