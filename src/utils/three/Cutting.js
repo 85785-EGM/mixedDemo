@@ -16,8 +16,6 @@ import {
 import { INTERSECTED, NOT_INTERSECTED } from 'three-mesh-bvh'
 import { triangulate } from './libtess'
 
-const _r = new Raycaster()
-const _v = new Vector3()
 const tempLine = new Line3()
 const tempVector = new Vector3()
 const XY = new Vector3(0, 0, 1).normalize()
@@ -90,6 +88,31 @@ function sortLines (lines = [new Line3()], needAll = false, maximum = 20) {
     return lineArray
   }
   return extractConjointLines(map)
+}
+
+function coplanarPoints (points = [new Vector3()], plane = new Plane()) {
+  const axis = plane
+    .clone()
+    .normal.cross(XY)
+    .normalize()
+  const angle = plane.normal.angleTo(XY)
+  const rotation = new Matrix4()
+  const array = []
+  const translation = new Matrix4()
+
+  rotation.makeRotationAxis(axis, angle)
+  for (const p of points) {
+    const v = p.clone().applyMatrix4(rotation)
+    translation.makeTranslation(0, 0, -v.z)
+    array.push(v.setZ(0))
+  }
+  return {
+    points: array,
+    matrix: translation
+      .clone()
+      .multiply(rotation)
+      .invert()
+  }
 }
 
 // 连接所有的小线条
@@ -174,7 +197,7 @@ function splitTriangle (
 
 function createPlaneFromTriangles (triangles = [new Triangle()]) {
   const splitTrianglePlanes = []
-  for (const triangle of splitTriangle) {
+  for (const triangle of triangles) {
     const planeT = triangle.getPlane(new Plane())
     // a,b
     splitTrianglePlanes.push([
@@ -556,6 +579,7 @@ export class Cutting {
   // 获取轮廓线内
   cutout () {
     const resultArray = []
+    const repairTriangles = []
     for (const st of this.shape) {
       resultArray.push(minimumCutting(this.attribute, st, true))
     }
@@ -565,30 +589,31 @@ export class Cutting {
     )
 
     for (const st of this.shape) {
-      repairTriangles.push(...fillShape(this.bvh, st, true))
+      // repairTriangles.push(...fillShape(this.bvh, st, true))
     }
-    const repairResult = removeRepeat(repairTriangles)
+    // const repairResult = removeRepeat(repairTriangles)
 
     return {
-      repair: repairResult,
+      // repair: repairResult,
       cut: cutResult.array
     }
   }
 
   // 删除轮廓线内
   cutoff () {
+    const repairTriangles = []
     let cutResult = this.attribute
     for (const st of this.shape) {
       result = minimumCutting(result, st, false)
     }
 
     for (const st of this.shape) {
-      repairTriangles.push(...fillShape(this.bvh, st, false))
+      // repairTriangles.push(...fillShape(this.bvh, st, false))
     }
-    const repairResult = removeRepeat(repairTriangles)
+    // const repairResult = removeRepeat(repairTriangles)
 
     return {
-      repair: repairResult,
+      // repair: repairResult,
       cut: cutResult.array
     }
   }
@@ -598,9 +623,13 @@ export class Cutting {
   }
 
   set attribute (value) {
-    this.attribute = value
-    const g = new BufferGeometry().setAttribute('position', this.attribute)
+    this._attribute = value
+    const g = new BufferGeometry().setAttribute('position', value)
     g.computeBoundsTree()
     this.bvh = g.boundsTree
+  }
+
+  get attribute () {
+    return this._attribute
   }
 }
