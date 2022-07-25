@@ -22,7 +22,7 @@ import { LineMaterial } from 'super-three/examples/jsm/lines/LineMaterial'
 import { NOT_INTERSECTED, INTERSECTED, CONTAINED } from 'three-mesh-bvh'
 import { buildMeshesKey, buildVectorKey } from './keys'
 import { buildGeometryFromPositions } from './geometry'
-import { triangulate } from './libtess'
+import { triangulate } from '../../../utils/three/libtess'
 
 const tempLine = new Line3()
 const tempVector = new Vector3()

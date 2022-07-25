@@ -1,6 +1,22 @@
 import libtess from 'libtess'
 import { Line3, Vector3 } from 'three'
-import { fixVector3 } from './geometry'
+
+export function fixVector3 (
+  vec3 = new Vector3(),
+  digit = 4,
+  target = new Vector3()
+) {
+  const zero = 0
+  const zeroFixed = zero.toFixed(digit)
+  const minusZeroFixed = '-' + zeroFixed
+  target.set(
+    ...[vec3.x, vec3.y, vec3.z]
+      .map(n => n.toFixed(digit))
+      .map(n => (n === minusZeroFixed ? zeroFixed : n))
+      .map(n => Number(n))
+  )
+  return target
+}
 
 const tessy = (function initTesselator () {
   // function called for each vertex of tesselator output
