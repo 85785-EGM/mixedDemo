@@ -438,7 +438,6 @@ function minimumCutting (
       )
     )
   }
-
   return new BufferAttribute(
     new Float32Array(result.flatMap(v => v.toArray())),
     3
@@ -589,12 +588,12 @@ export class Cutting {
     )
 
     for (const st of this.shape) {
-      // repairTriangles.push(...fillShape(this.bvh, st, true))
+      repairTriangles.push(...fillShape(this.bvh, st, true))
     }
-    // const repairResult = removeRepeat(repairTriangles)
+    const repairResult = removeRepeat(repairTriangles)
 
     return {
-      // repair: repairResult,
+      repair: repairResult,
       cut: cutResult.array
     }
   }
@@ -604,16 +603,16 @@ export class Cutting {
     const repairTriangles = []
     let cutResult = this.attribute
     for (const st of this.shape) {
-      result = minimumCutting(result, st, false)
+      cutResult = minimumCutting(cutResult, st, false)
     }
 
     for (const st of this.shape) {
-      // repairTriangles.push(...fillShape(this.bvh, st, false))
+      repairTriangles.push(...fillShape(this.bvh, st, false))
     }
-    // const repairResult = removeRepeat(repairTriangles)
+    const repairResult = removeRepeat(repairTriangles)
 
     return {
-      // repair: repairResult,
+      repair: repairResult,
       cut: cutResult.array
     }
   }

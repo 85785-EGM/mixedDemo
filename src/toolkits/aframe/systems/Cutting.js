@@ -33,15 +33,17 @@ export default {
       'mesh',
       new Mesh(geometry, output.components.material.material)
     )
-    const attr = object3D.geometry.getAttribute('position')
+    const attr = object3D.geometry.toNonIndexed().getAttribute('position')
 
     const cutting = new Cutting(attr)
     cutting.setShape(lines, plane)
-    console.log(cutting.cutout().cut)
 
     geometry.setAttribute(
       'position',
-      new BufferAttribute(new Float32Array(cutting.cutout().cut), 3)
+      new BufferAttribute(
+        new Float32Array([...cutting.cutoff().repair, ...cutting.cutoff().cut]),
+        3
+      )
     )
   },
 
