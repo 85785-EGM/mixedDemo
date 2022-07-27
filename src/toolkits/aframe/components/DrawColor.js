@@ -14,8 +14,8 @@ export default {
       color.setXYZ(i, 1, 0, 0)
     }
     mesh.geometry.setAttribute('color', color)
-    color.needsUpdate = true
-    mesh.geometry.needsUpdate = true
-    mesh.needsUpdate = true
+    // color.needsUpdate = true
+    // mesh.geometry.needsUpdate = true
+    // mesh.needsUpdate = true
   }
 }
