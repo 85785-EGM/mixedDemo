@@ -22,6 +22,7 @@
       id="qwer"
       width="40"
       height="40"
+      position="0 0 0.1"
       material="color: #12852c;opacity:0.3"
     />
     <a-cam
