@@ -310,11 +310,15 @@ function buildPlaneFacetsWithTess (
 }
 
 export class Clipping {
-  constructor (attribute = new BufferAttribute()) {
+  constructor (attribute = new BufferAttribute(), autoComputed = true) {
+    this.bvh = {}
+    this.autoComputed = autoComputed
     this.attribute = attribute
   }
 
-  trim (plane = new Plane()) {}
+  trim (plane = new Plane()) {
+    return [...this.filter(plane), ...this.repair(plane)]
+  }
 
   filter (plane = new Plane()) {
     const triangle = []
@@ -366,6 +370,7 @@ export class Clipping {
 
   set attribute (value) {
     this._attribute = value
+    if (!this.autoComputed) return
     const g = new BufferGeometry().setAttribute('position', value)
     g.computeBoundsTree()
     this.bvh = g.boundsTree

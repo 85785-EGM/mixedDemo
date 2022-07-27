@@ -60,7 +60,7 @@ export default {
         .getAttribute('position')
     )
 
-    const result = clipping.repair(tempPlane)
+    const result = clipping.trim(tempPlane)
     const g = new BufferGeometry()
     g.setAttribute(
       'position',
