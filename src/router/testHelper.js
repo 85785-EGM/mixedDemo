@@ -1,5 +1,6 @@
 export { default as Clipping } from '@/views/test/Clipping.vue'
 export { default as Color } from '@/views/test/Color.vue'
 export { default as Cutting } from '@/views/test/Cutting.vue'
+export { default as Folder } from '@/views/test/Folder.vue'
 export { default as GltfModel } from '@/views/test/GltfModel.vue'
 export { default as MeshCut } from '@/views/test/MeshCut.vue'
