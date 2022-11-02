@@ -5,23 +5,29 @@
     vr-mode-ui="enabled: false"
     axes-helper="visible: true"
   >
-    <a-plane
+    <a-entity
       id="origin"
-      color="#CCC"
-      segments-width="125"
-      segments-height="125"
-      clickable
-      width="40"
-      height="40"
-      wireframe="true"
-      :subdivision="{ inputEl: '#origin', outputEl: '#cut-el' }"
+      :stl-model="
+        parse({
+          src: '/maxillary (2).stl',
+          visible: state.show
+        })
+      "
+      :dijkstra="{
+        inputEl: '#origin',
+        start: state.start,
+        end: state.end
+      }"
+      pick-point-index="pick"
+      @pick="selectIndex"
     />
-    <a-entity id="cut-el" position="0 0 1" />
+    <a-sphere></a-sphere>
+    <a-entity id="cut-el" position="0 0 2" />
     <a-cam
       id="camera"
       camera="fov:20;near:1;far:5000"
       camera-controls
-      clicker
+      clicker="targets:[pick-point-index]"
     />
     <a-entity auto-light="intensity: 1;" />
   </a-scene>
@@ -34,7 +40,20 @@ import * as aframe from 'aframe'
 const parse = aframe.utils.styleParser.stringify
 const utils = aframe.utils
 
-const state = reactive({})
+const state = reactive({
+  start: null,
+  end: null,
+  show: true
+})
+
+function selectIndex ({ detail: { index } }) {
+  if (state.start === null) state.start = index
+  else if (state.end === null) state.end = index
+  else {
+    state.start = state.end
+    state.end = index
+  }
+}
 </script>
 
 <style scoped>
