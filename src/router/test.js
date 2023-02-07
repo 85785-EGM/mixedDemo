@@ -8,10 +8,7 @@ export default [
     component: Router,
     children: [
       ...Object.entries(testHelper).map(([key, value]) => ({
-        name: key
-          .replace(/[A-Z]/g, '-$&')
-          .replace(/^-/, '')
-          .toLowerCase(),
+        name: key.replace(/[A-Z]/g, '-$&').replace(/^-/, '').toLowerCase(),
         path: key.toLowerCase(),
         component: value
       }))

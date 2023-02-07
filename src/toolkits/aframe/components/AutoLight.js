@@ -13,7 +13,6 @@ export default {
   },
   update () {
     const { color, intensity } = this.data
-    console.log(color)
     const light = this.light
     light.intensity = intensity
     light.color.set(color)
